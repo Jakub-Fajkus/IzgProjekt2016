@@ -63,7 +63,7 @@ void gpu_runVertexPuller(
     GPUVertexPullerConfiguration const*const puller                ,
     VertexShaderInvocation             const vertexShaderInvocation){
   /// \todo Naimplementujte funkci vertex pulleru, využijte funkce
-  /// gpu_computeGLVertexID a gpu_computeVertexAttrbuteDataPointer.
+  /// gpu_computeGLVertexID a gpu_computeVertexAttributeDataPointer.
   /// Funkce vertex pulleru je nastavit správné adresy vertex attributů.
   /// Výstupem vertex pulleru je struktura obsahují seznam pointerů.
   /// Vašim úkolem je vypočítat správné adresy jednotlivých attributů.
@@ -71,8 +71,21 @@ void gpu_runVertexPuller(
   /// <b>Seznam funkcí, které jistě využijete:</b>
   ///  - gpu_computeGLVertexID()
   ///  - gpu_computeVertexAttributeDataPointer()
+
+  VertexIndex index = gpu_computeGLVertexID(puller->indices, vertexShaderInvocation);
+
+  for (int i = 0; i < MAX_ATTRIBUTES; ++i) {
+    GPUVertexPullerHead *actualHead = &puller->heads[i];
+    if (actualHead->enabled) {
+      output->attributes[i] = gpu_computeVertexAttributeDataPointer(actualHead, index);
+    } else {
+      output->attributes[i] = NULL;
+    }
+  }
+
   assert(output != NULL);
   assert(puller != NULL);
+
   (void)output;
   (void)puller;
   (void)vertexShaderInvocation;
