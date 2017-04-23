@@ -102,12 +102,7 @@ void gpu_runPrimitiveAssembly(
   assert(nofPrimitiveVertices <= VERTICES_PER_TRIANGLE);
   assert(puller               != NULL);
   assert(vertexShader         != NULL);
-  (void)gpu;
-  (void)primitive;
-  (void)nofPrimitiveVertices;
-  (void)puller;
-  (void)baseVertexShaderInvocation;
-  (void)vertexShader;
+
   /// \todo Naimplementujte funkci jednotky sestavující primitiva.
   /// Vašim úkolem je spustit vertex puller a dodaný vertex shader nad každým vrcholem primitiva.
   /// Funkce by měla spustit vertex puller/vertex shader N krát (podle množství vrcholů primitiva).
@@ -122,6 +117,33 @@ void gpu_runPrimitiveAssembly(
   /// <b>Seznam struktur, které jistě využijete:</b>
   ///  - GPUVertexPullerOutput()
   ///  - GPUVertexShaderInput()
+
+  primitive->nofUsedVertices = nofPrimitiveVertices;
+
+  VertexShaderInvocation actualInvocation = baseVertexShaderInvocation;
+  for (int i = 0; i < nofPrimitiveVertices; ++i, ++actualInvocation) {
+    GPUVertexShaderInput shaderInput;
+    shaderInput.attributes = malloc(sizeof(GPUVertexPullerOutput const*) * MAX_ATTRIBUTES);
+
+    shaderInput.gl_VertexID = gpu_computeGLVertexID(puller->indices, actualInvocation);
+    gpu_runVertexPuller(shaderInput.attributes, puller, actualInvocation);
+
+    vertexShader(&primitive->vertices[i], &shaderInput, gpu);
+  }
+
+  //todo?
+//  primitive->types[0] = ATTRIB_FLOAT;
+//  primitive->types[1] = ATTRIB_FLOAT;
+//  primitive->types[2] = ATTRIB_FLOAT;
+//  primitive->types[3] = ATTRIB_;
+//  primitive->types[4] = ;
+
+  (void)gpu;
+  (void)primitive;
+  (void)nofPrimitiveVertices;
+  (void)puller;
+  (void)baseVertexShaderInvocation;
+  (void)vertexShader;
 }
 
 /// @}
