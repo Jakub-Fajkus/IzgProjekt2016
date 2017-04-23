@@ -44,6 +44,9 @@ void const* gpu_computeVertexAttributeDataPointer(
   /// Dejte si pozor na ukazatelovou aritmetiku, ukazatel musí být na byte přesně.
   /// Správná adresa se odvíjí od adresy bufferu, offsetu čtěcí hlavy, čísla vrcholu a kroku čtecí hlavy.
   assert(head != NULL);
+
+  return head->buffer + head->stride * gl_VertexID + head->offset;
+
   (void)head;
   (void)gl_VertexID;
   return NULL;
@@ -667,8 +670,13 @@ void gpu_computeScreenSpaceBarycentrics(
 
   float delimiter = (y2-y3)*(x1-x3) + (x3-x2)*(y1-y3);
 
-  coords->data[0] = ((y2-y3)*(x-x3) + (x3-x2)*(y-y3)) / delimiter;
-  coords->data[1] = ((y3-y1)*(x-x3) + (x1-x3)*(y-y3)) / delimiter;
+  if (delimiter == 0) {
+    coords->data[0] = 0;
+    coords->data[1] = 0;
+  } else {
+    coords->data[0] = ((y2-y3)*(x-x3) + (x3-x2)*(y-y3)) / delimiter;
+    coords->data[1] = ((y3-y1)*(x-x3) + (x1-x3)*(y-y3)) / delimiter;
+  }
   coords->data[2] = 1 - coords->data[0] - coords->data[1];
 
   (void)coords;
