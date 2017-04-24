@@ -11,9 +11,12 @@
 #include"student/student_shader.h"
 #include"student/gpu.h"
 #include"student/uniforms.h"
+#include "mouseCamera.h"
 
 /// \addtogroup shader_side Úkoly v shaderech
 /// @{
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
 void phong_vertexShader(
     GPUVertexShaderOutput     *const output,
@@ -74,6 +77,44 @@ void phong_fragmentShader(
   /// <b>Seznam funkcí, které jistě využijete</b>:
   ///  - shader_interpretUniformAsVec3()
   ///  - fs_interpretInputAttributeAsVec3()
+
+  Vec3 cameraPosition;
+  Vec3 lightPosition;
+  normalize_Vec3(&cameraPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "cameraPosition")));
+  normalize_Vec3(&lightPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")));
+  Vec3 green; //alfa?
+  init_Vec3(&green, 0, 1, 0);
+
+  Vec3 white; //alfa?
+  init_Vec3(&white, 1, 1, 1);
+
+  Vec3 normal;
+  normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
+
+  Vec3 tmp;
+  multiply_Vec3_Float(&tmp, &normal, 2 * dot_Vec3(&normal, &lightPosition));
+  normalize_Vec3(&tmp, &tmp);
+  Vec3 reflection;
+  sub_Vec3(&reflection, &tmp, &lightPosition);
+  normalize_Vec3(&reflection, &reflection);
+
+  //difuzni = zelena
+  //spekularni = bila
+  //svetlo = bile
+
+
+//  float Is = dot_Vec3(&cameraPosition, input->attributes.attributes[1]);
+  Vec3 colorDiffuse;
+  multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightPosition),0)); //todo: add intensity?
+
+  Vec3 colorSpecular;
+  multiply_Vec3_Float(&colorSpecular, &white, powf(MAX(dot_Vec3(&cameraPosition, &reflection), 0), 40.f)); //todo: add intensity?
+
+  Vec3 color;
+  add_Vec3(&color, &colorDiffuse, &colorSpecular);
+
+  init_Vec4(&output->color, color.data[0], color.data[1], color.data[2], 1);
+
   (void)output;
   (void)input;
   (void)gpu;
