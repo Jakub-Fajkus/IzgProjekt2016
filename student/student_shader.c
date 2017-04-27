@@ -56,7 +56,7 @@ void phong_fragmentShader(
     GPUFragmentShaderOutput     *const output,
     GPUFragmentShaderInput const*const input ,
     GPU                          const gpu   ){
-  /// \todo Naimplementujte fragment shader, který počítá phongův osvětlovací model s phongovým stínováním.<br>
+  /// \todo ROZPRACOVANO Naimplementujte fragment shader, který počítá phongův osvětlovací model s phongovým stínováním.<br>
   /// <b>Vstup:</b><br>
   /// Vstupní fragment by měl v nultém fragment atributu obsahovat interpolovanou pozici ve world-space a v prvním
   /// fragment atributu obsahovat interpolovanou normálu ve world-space.<br>

@@ -21,7 +21,7 @@
 VertexIndex gpu_computeGLVertexID(
     VertexIndex            const*const indices               ,
     VertexShaderInvocation       const vertexShaderInvocation){
-  /// \todo Naimplementujte výpočet gl_VertexID z vertexShaderInvocation
+  /// \todo HOTOVO Naimplementujte výpočet gl_VertexID z vertexShaderInvocation
   /// a případného indexování.
   /// vertexShaderInvocation obsahuje pořadové číslo spuštění (invokace) 
   /// vertex shaderu v rámci jednoho vykreslovacího příkazu.
@@ -45,7 +45,7 @@ VertexIndex gpu_computeGLVertexID(
 void const* gpu_computeVertexAttributeDataPointer(
     GPUVertexPullerHead const*const head       ,
     VertexIndex               const gl_VertexID){
-  /// \todo Naimplementujte výpočet ukazatele pro daný vertex attribut a číslo vrcholu.
+  /// \todo HOTOVO Naimplementujte výpočet ukazatele pro daný vertex attribut a číslo vrcholu.
   /// Tato funkce počíta přesný ukazatel na data vertex atributu.
   /// Dejte si pozor na ukazatelovou aritmetiku, ukazatel musí být na byte přesně.
   /// Správná adresa se odvíjí od adresy bufferu, offsetu čtěcí hlavy, čísla vrcholu a kroku čtecí hlavy.
@@ -62,7 +62,7 @@ void gpu_runVertexPuller(
     GPUVertexPullerOutput             *const output                ,
     GPUVertexPullerConfiguration const*const puller                ,
     VertexShaderInvocation             const vertexShaderInvocation){
-  /// \todo Naimplementujte funkci vertex pulleru, využijte funkce
+  /// \todo HOTOVO Naimplementujte funkci vertex pulleru, využijte funkce
   /// gpu_computeGLVertexID a gpu_computeVertexAttributeDataPointer.
   /// Funkce vertex pulleru je nastavit správné adresy vertex attributů.
   /// Výstupem vertex pulleru je struktura obsahují seznam pointerů.
@@ -71,6 +71,9 @@ void gpu_runVertexPuller(
   /// <b>Seznam funkcí, které jistě využijete:</b>
   ///  - gpu_computeGLVertexID()
   ///  - gpu_computeVertexAttributeDataPointer()
+
+  assert(output != NULL);
+  assert(puller != NULL);
 
   VertexIndex index = gpu_computeGLVertexID(puller->indices, vertexShaderInvocation);
 
@@ -82,9 +85,6 @@ void gpu_runVertexPuller(
       output->attributes[i] = NULL;
     }
   }
-
-  assert(output != NULL);
-  assert(puller != NULL);
 
   (void)output;
   (void)puller;
@@ -103,7 +103,7 @@ void gpu_runPrimitiveAssembly(
   assert(puller               != NULL);
   assert(vertexShader         != NULL);
 
-  /// \todo Naimplementujte funkci jednotky sestavující primitiva.
+  /// \todo HOTOVO, MUZE ZPUSOBOVAT PROBLEMY Naimplementujte funkci jednotky sestavující primitiva.
   /// Vašim úkolem je spustit vertex puller a dodaný vertex shader nad každým vrcholem primitiva.
   /// Funkce by měla spustit vertex puller/vertex shader N krát (podle množství vrcholů primitiva).
   /// Výstupy z vertex shaderu vložte do parametru primitive.
@@ -686,7 +686,7 @@ void gpu_computeScreenSpaceBarycentrics(
     Vec2 const*const pixelCenter                       ,
     Vec2       const vertices   [VERTICES_PER_TRIANGLE],
     Vec3       const lines      [EDGES_PER_TRIANGLE   ]){
-  /// \todo V této funkci spočtěte barycentrické coordináty trojúhelníku v obrazovce.
+  /// \todo HOTOVO V této funkci spočtěte barycentrické coordináty trojúhelníku v obrazovce.
   /// Coordináty zapište do coords.
   /// V proměnné vertices naleznete pozice vrcholů ve 2D v obrazovce.
   /// V proměnné lines naleznete rovnice přímek hran trojúhelníka.
