@@ -7,11 +7,13 @@
 
 #include<math.h>
 #include<assert.h>
+#include <memory.h>
 
 #include"student/student_shader.h"
 #include"student/gpu.h"
 #include"student/uniforms.h"
 #include "mouseCamera.h"
+#include "vertexPuller.h"
 
 /// \addtogroup shader_side Úkoly v shaderech
 /// @{
@@ -22,14 +24,14 @@ void phong_vertexShader(
     GPUVertexShaderOutput     *const output,
     GPUVertexShaderInput const*const input ,
     GPU                        const gpu   ){
-  /// \todo Naimplementujte vertex shader, který transformuje vstupní vrcholy do clip-space.<br>
-  /// <b>Vstupy:</b><br>
-  /// Vstupní vrchol by měl v nultém atributu obsahovat pozici vrcholu ve world-space (vec3) a v prvním
-  /// atributu obsahovat normálu vrcholu ve world-space (vec3).<br>
-  /// <b>Výstupy:</b><br>
-  /// Výstupní vrchol by měl v nultém atributu obsahovat pozici vrcholu (vec3) ve world-space a v prvním
-  /// atributu obsahovat normálu vrcholu ve world-space (vec3).
-  /// Výstupní vrchol obsahuje pozici a normálu vrcholu proto, že chceme počítat osvětlení ve world-space ve fragment shaderu.<br>
+  /// \todo HOTOVO Naimplementujte vertex shader, který transformuje vstupní vrcholy do clip-space.<br>
+    /// <b>Vstupy:</b><br>
+    /// Vstupní vrchol by měl v nultém atributu obsahovat pozici vrcholu ve world-space (vec3) a v prvním
+    /// atributu obsahovat normálu vrcholu ve world-space (vec3).<br>
+    /// <b>Výstupy:</b><br>
+    /// Výstupní vrchol by měl v nultém atributu obsahovat pozici vrcholu (vec3) ve world-space a v prvním
+    /// atributu obsahovat normálu vrcholu ve world-space (vec3).
+    /// Výstupní vrchol obsahuje pozici a normálu vrcholu proto, že chceme počítat osvětlení ve world-space ve fragment shaderu.<br>
   /// <b>Uniformy:</b><br>
   /// Vertex shader by měl pro transformaci využít uniformní proměnné obsahující view a projekční matici.
   /// View matici čtěte z uniformní proměnné "viewMatrix" a projekční matici čtěte z uniformní proměnné "projectionMatrix".
@@ -42,14 +44,33 @@ void phong_vertexShader(
   /// Pro získání dat uniformních proměnných použijte příslušné funkce shader_interpretUniform* definované v souboru program.h.
   /// Vrchol v clip-space by měl být zapsán do proměnné gl_Position ve výstupní struktuře.<br>
   /// <b>Seznam funkcí, které jistě použijete</b>:
-  ///  - gpu_getUniformsHandle()
-  ///  - getUniformLocation()
-  ///  - shader_interpretUniformAsMat4()
-  ///  - vs_interpretInputVertexAttributeAsVec3()
+  ///  - gpu_getUniformsHandle()                  XXX
+  ///  - getUniformLocation()                     XXX
+  ///  - shader_interpretUniformAsMat4()          XXX
+  ///  - vs_interpretInputVertexAttributeAsVec3() XXX
   ///  - vs_interpretOutputVertexAttributeAsVec3()
 
 
+  Mat4 projectionMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "projectionMatrix"));
+  Mat4 viewMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "viewMatrix"));
 
+  Mat4 mult;
+  multiply_Mat4_Mat4(&mult, &projectionMatrix, &viewMatrix);
+
+  Vec4 pos;
+  Vec3 pos3 = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 0);
+
+  copy_Vec3Float_To_Vec4(&pos, &pos3, 1.f);
+
+  multiply_Mat4_Vec4(&output->gl_Position, &mult, &pos);
+
+  Vec3 *const position = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 0);
+  init_Vec3(position, pos3.data[0], pos3.data[1], pos3.data[2]);
+
+  Vec3 vecNormal = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 1);//index of vertex attribute
+
+  Vec3 *const normal = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 1);//index of vertex attribute
+  init_Vec3(normal, vecNormal.data[0], vecNormal.data[1], vecNormal.data[2]);
 
   (void)output;
   (void)input;
@@ -104,12 +125,6 @@ void phong_fragmentShader(
   sub_Vec3(&reflection, &tmp, &lightVector);
   normalize_Vec3(&reflection, &reflection);
 
-  //difuzni = zelena
-  //spekularni = bila
-  //svetlo = bile
-
-
-//  float Is = dot_Vec3(&cameraPosition, input->attributes.attributes[1]);
   Vec3 colorDiffuse;
   multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightVector),0));
 

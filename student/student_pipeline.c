@@ -123,7 +123,7 @@ void gpu_runPrimitiveAssembly(
   VertexShaderInvocation actualInvocation = baseVertexShaderInvocation;
   for (int i = 0; i < nofPrimitiveVertices; ++i, ++actualInvocation) {
     GPUVertexShaderInput shaderInput;
-    shaderInput.attributes = malloc(sizeof(GPUVertexPullerOutput const*) * MAX_ATTRIBUTES);
+    shaderInput.attributes = malloc(sizeof(GPUVertexPullerOutput const*) * MAX_ATTRIBUTES); //todo: make static
 
     shaderInput.gl_VertexID = gpu_computeGLVertexID(puller->indices, actualInvocation);
     gpu_runVertexPuller(shaderInput.attributes, puller, actualInvocation);
