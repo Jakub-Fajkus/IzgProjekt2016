@@ -47,6 +47,10 @@ void phong_vertexShader(
   ///  - shader_interpretUniformAsMat4()
   ///  - vs_interpretInputVertexAttributeAsVec3()
   ///  - vs_interpretOutputVertexAttributeAsVec3()
+
+
+
+
   (void)output;
   (void)input;
   (void)gpu;
@@ -56,7 +60,7 @@ void phong_fragmentShader(
     GPUFragmentShaderOutput     *const output,
     GPUFragmentShaderInput const*const input ,
     GPU                          const gpu   ){
-  /// \todo ROZPRACOVANO Naimplementujte fragment shader, který počítá phongův osvětlovací model s phongovým stínováním.<br>
+  /// \todo HOTOVO Naimplementujte fragment shader, který počítá phongův osvětlovací model s phongovým stínováním.<br>
   /// <b>Vstup:</b><br>
   /// Vstupní fragment by měl v nultém fragment atributu obsahovat interpolovanou pozici ve world-space a v prvním
   /// fragment atributu obsahovat interpolovanou normálu ve world-space.<br>
@@ -79,9 +83,11 @@ void phong_fragmentShader(
   ///  - fs_interpretInputAttributeAsVec3()
 
   Vec3 cameraPosition;
-  Vec3 lightPosition;
+  Vec3 lightVector;
   normalize_Vec3(&cameraPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "cameraPosition")));
-  normalize_Vec3(&lightPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")));
+  sub_Vec3(&lightVector, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")), fs_interpretInputAttributeAsVec3(gpu, input, 0));
+  normalize_Vec3(&lightVector, &lightVector);
+
   Vec3 green; //alfa?
   init_Vec3(&green, 0, 1, 0);
 
@@ -92,10 +98,10 @@ void phong_fragmentShader(
   normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
 
   Vec3 tmp;
-  multiply_Vec3_Float(&tmp, &normal, 2 * dot_Vec3(&normal, &lightPosition));
+  multiply_Vec3_Float(&tmp, &normal, 2 * dot_Vec3(&normal, &lightVector));
   normalize_Vec3(&tmp, &tmp);
   Vec3 reflection;
-  sub_Vec3(&reflection, &tmp, &lightPosition);
+  sub_Vec3(&reflection, &tmp, &lightVector);
   normalize_Vec3(&reflection, &reflection);
 
   //difuzni = zelena
@@ -105,10 +111,10 @@ void phong_fragmentShader(
 
 //  float Is = dot_Vec3(&cameraPosition, input->attributes.attributes[1]);
   Vec3 colorDiffuse;
-  multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightPosition),0)); //todo: add intensity?
+  multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightVector),0));
 
   Vec3 colorSpecular;
-  multiply_Vec3_Float(&colorSpecular, &white, powf(MAX(dot_Vec3(&cameraPosition, &reflection), 0), 40.f)); //todo: add intensity?
+  multiply_Vec3_Float(&colorSpecular, &white, powf(MAX(dot_Vec3(&cameraPosition, &reflection), 0), 40.f));
 
   Vec3 color;
   add_Vec3(&color, &colorDiffuse, &colorSpecular);
