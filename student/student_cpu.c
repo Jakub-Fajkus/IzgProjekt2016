@@ -37,6 +37,8 @@ struct PhongVariables {
     GPU gpu;
     ///This variable contains light poistion in world-space.
     Vec3 lightPosition;
+    ProgramID program;
+    VertexPullerID puller;
 
 
 } phong;///<instance of all global variables for triangle example.
@@ -74,19 +76,19 @@ void phong_onInit(int32_t width, int32_t height) {
   /// <b>Seznam funkcí, které jistě využijete:</b>
   ///  - cpu_reserveUniform()              XXX
   ///  - cpu_createProgram()               XXX
-  ///  - cpu_attachVertexShader()
-  ///  - cpu_attachFragmentShader()
-  ///  - cpu_setAttributeInterpolation()
-  ///  - cpu_createBuffers()
-  ///  - cpu_bufferData()
-  ///  - cpu_createVertexPullers()
-  ///  - cpu_setVertexPullerHead()
-  ///  - cpu_enableVertexPullerHead()
+  ///  - cpu_attachVertexShader()          XXX
+  ///  - cpu_attachFragmentShader()        XXX
+  ///  - cpu_setAttributeInterpolation()   XXX
+  ///  - cpu_createBuffers()               XXX
+  ///  - cpu_bufferData()                  XXX
+  ///  - cpu_createVertexPullers()         XXX
+  ///  - cpu_setVertexPullerHead()         XXX
+  ///  - cpu_enableVertexPullerHead()      XXX
   ///  - cpu_setIndexing()
 
 
-  ProgramID program = cpu_createProgram(phong.gpu);
-  cpu_useProgram(phong.gpu, program);
+  phong.program = cpu_createProgram(phong.gpu);
+  cpu_useProgram(phong.gpu, phong.program);
 
   cpu_reserveUniform(
           phong.gpu, //gpu
@@ -108,17 +110,17 @@ void phong_onInit(int32_t width, int32_t height) {
           UNIFORM_VEC3       );//uniform type
 
 //  //set interpolation
-  cpu_setAttributeInterpolation(phong.gpu, program, 0, ATTRIB_VEC3, SMOOTH);
-  cpu_setAttributeInterpolation(phong.gpu, program, 1, ATTRIB_VEC3, SMOOTH);
+  cpu_setAttributeInterpolation(phong.gpu, phong.program, 0, ATTRIB_VEC3, SMOOTH);
+  cpu_setAttributeInterpolation(phong.gpu, phong.program, 1, ATTRIB_VEC3, SMOOTH);
 
   cpu_attachVertexShader  (
           phong.gpu           , //gpu
-          program       , //program id
+          phong.program       , //phong.program id
           phong_vertexShader  );//pointer to function that represents vertex shader
 
   cpu_attachFragmentShader(
           phong.gpu           , //gpu
-          program       , //program id
+          phong.program       , //phong.program id
           phong_fragmentShader);//pointer to function that represents fragment shader
 
   size_t verticesBuffer;
@@ -130,10 +132,10 @@ void phong_onInit(int32_t width, int32_t height) {
   cpu_bufferData(
           phong.gpu     , //gpu
           verticesBuffer, //buffer id
-          sizeof(float)*1048         , //size of data that is going to be copied to buffer
+          6*sizeof(float)*1048         , //size of data that is going to be copied to buffer
           bunnyVertices               );//pointer to data
 
-  size_t indiciesBuffer = 100;
+  size_t indiciesBuffer;
   cpu_createBuffers(
           phong.gpu      , //gpu
           1              , //number of buffer ids that will be reserved
@@ -142,19 +144,17 @@ void phong_onInit(int32_t width, int32_t height) {
   cpu_bufferData(
           phong.gpu     , //gpu
           indiciesBuffer, //buffer id
-          sizeof(float)*2092         , //size of data that is going to be copied to buffer
+          3*sizeof(size_t)*sizeof(float)*2092         , //size of data that is going to be copied to buffer
           bunnyIndices               );//pointer to data
-
-  VertexPullerID vertexPuller;
 
   cpu_createVertexPullers(
           phong.gpu    , //gpu
           1                      , //number of puller ids that will be reserved
-          &vertexPuller);//pointer to puller id variable
+          &phong.puller);//pointer to puller id variable
 
   cpu_setVertexPullerHead(
           phong.gpu     , //gpu
-          vertexPuller  , //puller id
+          phong.puller  , //puller id
           0                       , //id of head/vertex attrib
           indiciesBuffer, //buffer id
           sizeof(float)*0         , //offset
@@ -162,12 +162,12 @@ void phong_onInit(int32_t width, int32_t height) {
 
   cpu_enableVertexPullerHead(
           phong.gpu   , //gpu
-          vertexPuller, //puller id
+          phong.puller, //puller id
           0                     );//id of head/vertex attrib
 
   cpu_setVertexPullerHead(
           phong.gpu     , //gpu
-          vertexPuller  , //puller id
+          phong.puller  , //puller id
           1                       , //id of head/vertex attrib
           indiciesBuffer, //buffer id
           sizeof(float)*0         , //offset
@@ -175,13 +175,13 @@ void phong_onInit(int32_t width, int32_t height) {
 
   cpu_enableVertexPullerHead(
           phong.gpu   , //gpu
-          vertexPuller, //puller id
+          phong.puller, //puller id
           1                     );//id of head/vertex attrib
 
-//  cpu_setIndexing(phong.gpu, vertexPuller, )
+  cpu_setIndexing(phong.gpu, phong.puller, indiciesBuffer, 4); //1,2, 4?
 
-//  //activate program
-  cpu_useProgram(phong.gpu,program);
+//  //activate phong.program
+  cpu_useProgram(phong.gpu,phong.program);
 }
 
 /// @}
@@ -215,14 +215,10 @@ void phong_onDraw(SDL_Surface *surface) {
   ///  - cpu_drawTriangles()      XXX
   ///  - getUniformLocation()     XXX
 
-  ProgramID program = cpu_createProgram(phong.gpu);
-  cpu_useProgram(phong.gpu, program);
+  cpu_useProgram(phong.gpu, phong.program);
 
   //create vertex puller
-  VertexPullerID puller;
-  cpu_createVertexPullers(phong.gpu, 1, &puller);
-
-  cpu_bindVertexPuller(phong.gpu, puller);
+  cpu_bindVertexPuller(phong.gpu, phong.puller);
 
   //upload camera position
   cpu_uniform3f(phong.gpu, getUniformLocation(phong.gpu, "cameraPosition"), cameraPosition.data[0],
@@ -235,7 +231,7 @@ void phong_onDraw(SDL_Surface *surface) {
   //upload view matrix
   cpu_uniformMatrix4fv(phong.gpu, getUniformLocation(phong.gpu, "viewMatrix"), (float *) &viewMatrix);
 
-  //upload view matrix
+  //upload projection matrix
   cpu_uniformMatrix4fv(phong.gpu, getUniformLocation(phong.gpu, "projectionMatrix"), (float *) &projectionMatrix);
 
   cpu_drawTriangles(phong.gpu, 1048); //1048 bunny vertices? found in bunny.c
