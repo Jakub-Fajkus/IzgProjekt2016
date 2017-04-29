@@ -50,27 +50,72 @@ void phong_vertexShader(
   ///  - vs_interpretInputVertexAttributeAsVec3() XXX
   ///  - vs_interpretOutputVertexAttributeAsVec3()
 
+//
+//  Mat4 projectionMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "projectionMatrix"));
+//  Mat4 viewMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "viewMatrix"));
+//
+//  Mat4 mult;
+//  multiply_Mat4_Mat4(&mult, &projectionMatrix, &viewMatrix);
+//
+//  Vec4 pos;
+//  Vec3 pos3 = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 0);
+//
+//  copy_Vec3Float_To_Vec4(&pos, &pos3, 1.f);
+//
+//  multiply_Mat4_Vec4(&output->gl_Position, &mult, &pos);
+//
+//  Vec3 *const position = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 0);
+//  init_Vec3(position, pos3.data[0], pos3.data[1], pos3.data[2]);
+//
+//  Vec3 vecNormal = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 1);//index of vertex attribute
+//
+//  Vec3 *const normal = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 1);//index of vertex attribute
+//  init_Vec3(normal, vecNormal.data[0], vecNormal.data[1], vecNormal.data[2]);
 
-  Mat4 projectionMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "projectionMatrix"));
-  Mat4 viewMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "viewMatrix"));
+  //get handle to all uniforms
+  Uniforms const uniformsHandle = gpu_getUniformsHandle(
+          gpu);//gpu
+  //get uniform location of view matrix
+  UniformLocation const viewMatrixLocation = getUniformLocation(
+          gpu         , //gpu handle
+          "viewMatrix");//name of uniform variable
+  //get pointer to view matrix
+  Mat4 const*const view = shader_interpretUniformAsMat4(
+          uniformsHandle    , //handle to all uniforms
+          viewMatrixLocation);//location of view matrix
+  //get uniform location of projection matrix
+  UniformLocation const projectionMatrixLocation = getUniformLocation(
+          gpu               , //gpu handle
+          "projectionMatrix");//name of uniform variable
+  //get pointer to projection matrix
+  Mat4 const*const proj = shader_interpretUniformAsMat4(
+          uniformsHandle          , //handle to all uniforms
+          projectionMatrixLocation);//location of projection matrix
 
-  Mat4 mult;
-  multiply_Mat4_Mat4(&mult, &projectionMatrix, &viewMatrix);
+  Vec3 const*const position = vs_interpretInputVertexAttributeAsVec3(
+          gpu  , //gpu
+          input, //input vertex
+          0    );//index of vertex attribute
 
-  Vec4 pos;
-  Vec3 pos3 = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 0);
+  Mat4 mvp;
+  multiply_Mat4_Mat4(&mvp,proj,view);
+  Vec4 pos4;
+  copy_Vec3Float_To_Vec4(&pos4,position,1.f);
+  multiply_Mat4_Vec4(
+          &output->gl_Position, //output - position of output vertex in clip-space
+          &mvp                , //projection view matrix
+          &pos4               );//position of vertex in world-space
 
-  copy_Vec3Float_To_Vec4(&pos, &pos3, 1.f);
+  Vec3 *const colorAttribute = vs_interpretOutputVertexAttributeAsVec3(
+          gpu   , //gpu
+          output, //output vertex
+          0     );//index of vertex attribute
 
-  multiply_Mat4_Vec4(&output->gl_Position, &mult, &pos);
-
-  Vec3 *const position = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 0);
-  init_Vec3(position, pos3.data[0], pos3.data[1], pos3.data[2]);
-
-  Vec3 vecNormal = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 1);//index of vertex attribute
-
-  Vec3 *const normal = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 1);//index of vertex attribute
-  init_Vec3(normal, vecNormal.data[0], vecNormal.data[1], vecNormal.data[2]);
+  init_Vec3(
+          colorAttribute                  , //pointer to vertex attribute
+          (float)(input->gl_VertexID == 0), //zeroth vertex will be red
+          (float)(input->gl_VertexID == 1), //first vertex will be green
+          (float)(input->gl_VertexID == 2));//second vertex will be blue
 
   (void)output;
   (void)input;
@@ -103,38 +148,49 @@ void phong_fragmentShader(
   ///  - shader_interpretUniformAsVec3()
   ///  - fs_interpretInputAttributeAsVec3()
 
-  Vec3 cameraPosition;
-  Vec3 lightVector;
-  normalize_Vec3(&cameraPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "cameraPosition")));
-  sub_Vec3(&lightVector, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")), fs_interpretInputAttributeAsVec3(gpu, input, 0));
-  normalize_Vec3(&lightVector, &lightVector);
+  Vec3 const*colorAttribute = fs_interpretInputAttributeAsVec3(
+          gpu  , //gpu
+          input, //input fragment
+          0    );//index of fragment attribute
 
-  Vec3 green; //alfa?
-  init_Vec3(&green, 0, 1, 0);
+  copy_Vec3Float_To_Vec4(
+          &output->color, //output fragment color
+          colorAttribute, //computed color
+          1.f           );//alpha
 
-  Vec3 white; //alfa?
-  init_Vec3(&white, 1, 1, 1);
 
-  Vec3 normal;
-  normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
-
-  Vec3 tmp;
-  multiply_Vec3_Float(&tmp, &normal, 2 * dot_Vec3(&normal, &lightVector));
-  normalize_Vec3(&tmp, &tmp);
-  Vec3 reflection;
-  sub_Vec3(&reflection, &tmp, &lightVector);
-  normalize_Vec3(&reflection, &reflection);
-
-  Vec3 colorDiffuse;
-  multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightVector),0));
-
-  Vec3 colorSpecular;
-  multiply_Vec3_Float(&colorSpecular, &white, powf(MAX(dot_Vec3(&cameraPosition, &reflection), 0), 40.f));
-
-  Vec3 color;
-  add_Vec3(&color, &colorDiffuse, &colorSpecular);
-
-  init_Vec4(&output->color, color.data[0], color.data[1], color.data[2], 1);
+//  Vec3 cameraPosition;
+//  Vec3 lightVector;
+//  normalize_Vec3(&cameraPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "cameraPosition")));
+//  sub_Vec3(&lightVector, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")), fs_interpretInputAttributeAsVec3(gpu, input, 0));
+//  normalize_Vec3(&lightVector, &lightVector);
+//
+//  Vec3 green; //alfa?
+//  init_Vec3(&green, 0, 1, 0);
+//
+//  Vec3 white; //alfa?
+//  init_Vec3(&white, 1, 1, 1);
+//
+//  Vec3 normal;
+//  normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
+//
+//  Vec3 tmp;
+//  multiply_Vec3_Float(&tmp, &normal, 2 * dot_Vec3(&normal, &lightVector));
+//  normalize_Vec3(&tmp, &tmp);
+//  Vec3 reflection;
+//  sub_Vec3(&reflection, &tmp, &lightVector);
+//  normalize_Vec3(&reflection, &reflection);
+//
+//  Vec3 colorDiffuse;
+//  multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightVector),0));
+//
+//  Vec3 colorSpecular;
+//  multiply_Vec3_Float(&colorSpecular, &white, powf(MAX(dot_Vec3(&cameraPosition, &reflection), 0), 40.f));
+//
+//  Vec3 color;
+//  add_Vec3(&color, &colorDiffuse, &colorSpecular);
+//
+//  init_Vec4(&output->color, color.data[0], color.data[1], color.data[2], 1);
 
   (void)output;
   (void)input;

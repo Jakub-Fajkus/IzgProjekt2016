@@ -78,9 +78,9 @@ void gpu_runVertexPuller(
   VertexIndex index = gpu_computeGLVertexID(puller->indices, vertexShaderInvocation);
 
   for (int i = 0; i < MAX_ATTRIBUTES; ++i) {
-    GPUVertexPullerHead *actualHead = &puller->heads[i];
-    if (actualHead->enabled) {
-      output->attributes[i] = gpu_computeVertexAttributeDataPointer(actualHead, index);
+    GPUVertexPullerHead actualHead = puller->heads[i];
+    if (actualHead.enabled) {
+      output->attributes[i] = gpu_computeVertexAttributeDataPointer(&actualHead, index);
     } else {
       output->attributes[i] = NULL;
     }

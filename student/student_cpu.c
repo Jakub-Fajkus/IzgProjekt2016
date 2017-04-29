@@ -39,6 +39,7 @@ struct PhongVariables {
     Vec3 lightPosition;
     ProgramID program;
     VertexPullerID puller;
+    BufferID vertices;
 
 
 } phong;///<instance of all global variables for triangle example.
@@ -86,10 +87,18 @@ void phong_onInit(int32_t width, int32_t height) {
   ///  - cpu_enableVertexPullerHead()      XXX
   ///  - cpu_setIndexing()
 
+//! [INITIALIZATION]
+  phong.gpu = cpu_createGPU();
 
-  phong.program = cpu_createProgram(phong.gpu);
-  cpu_useProgram(phong.gpu, phong.program);
+  cpu_setViewportSize(
+          phong.gpu, //gpu
+          (size_t)width      , //width of screen/framebuffer in pixels
+          (size_t)height     );//height of screen/framebuffer in pixels
 
+  cpu_initMatrices(width,height);
+  //! [INITIALIZATION]
+
+  //! [RESERVE]
   cpu_reserveUniform(
           phong.gpu, //gpu
           "projectionMatrix" , //uniform name
@@ -99,64 +108,63 @@ void phong_onInit(int32_t width, int32_t height) {
           phong.gpu, //gpu
           "viewMatrix"       , //uniform name
           UNIFORM_MAT4       );//uniform type
+  //! [RESERVE]
 
-  cpu_reserveUniform(
-          phong.gpu, //gpu
-          "cameraPosition"       , //uniform name
-          UNIFORM_VEC3       );//uniform type
-  cpu_reserveUniform(
-          phong.gpu, //gpu
-          "lightPosition"       , //uniform name
-          UNIFORM_VEC3       );//uniform type
-
-//  //set interpolation
-  cpu_setAttributeInterpolation(phong.gpu, phong.program, 0, ATTRIB_VEC3, SMOOTH);
-  cpu_setAttributeInterpolation(phong.gpu, phong.program, 1, ATTRIB_VEC3, SMOOTH);
-
+  //! [CREATE_PROGRAM]
+  phong.program = cpu_createProgram(
+          phong.gpu);//gpu
+  //! [CREATE_PROGRAM]
+  //! [ATTACH]
   cpu_attachVertexShader  (
           phong.gpu           , //gpu
-          phong.program       , //phong.program id
+          phong.program       , //program id
           phong_vertexShader  );//pointer to function that represents vertex shader
 
   cpu_attachFragmentShader(
           phong.gpu           , //gpu
-          phong.program       , //phong.program id
+          phong.program       , //program id
           phong_fragmentShader);//pointer to function that represents fragment shader
+  //! [ATTACH]
+  //! [INTERPOLATION]
+  cpu_setAttributeInterpolation(
+          phong.gpu    , //gpu
+          phong.program, //program id
+          0                      , //vertex attribute index
+          ATTRIB_VEC3,SMOOTH     );//interpolation type - with perspective correction
+  //! [INTERPOLATION]
 
-  size_t verticesBuffer;
+  //! [BUFFER]
   cpu_createBuffers(
           phong.gpu      , //gpu
-          1              , //number of buffer ids that will be reserved
-          &verticesBuffer);//pointer to buffer id variable
+          1                        , //number of buffer ids that will be reserved
+          &phong.vertices);//pointer to buffer id variable
+
+  float const positions[9] = {//vertex positions
+          -1.f,-1.f,+0.f,//triangle vertex A
+          +1.f,-1.f,+0.f,//triangle vertex B
+          -1.f,+1.f,+0.f,//triangle vertex C
+  };
 
   cpu_bufferData(
           phong.gpu     , //gpu
-          verticesBuffer, //buffer id
-          6*sizeof(float)*1048         , //size of data that is going to be copied to buffer
-          bunnyVertices               );//pointer to data
+          phong.vertices, //buffer id
+          sizeof(float)*9         , //size of data that is going to be copied to buffer
+          positions               );//pointer to data
+  //! [BUFFER]
 
-  size_t indiciesBuffer;
-  cpu_createBuffers(
-          phong.gpu      , //gpu
-          1              , //number of buffer ids that will be reserved
-          &indiciesBuffer);//pointer to buffer id variable
-
-  cpu_bufferData(
-          phong.gpu     , //gpu
-          indiciesBuffer, //buffer id
-          3*sizeof(size_t)*sizeof(float)*2092         , //size of data that is going to be copied to buffer
-          bunnyIndices               );//pointer to data
-
+  //! [PULLER]
   cpu_createVertexPullers(
           phong.gpu    , //gpu
           1                      , //number of puller ids that will be reserved
           &phong.puller);//pointer to puller id variable
+  //! [PULLER]
 
+  //! [HEAD]
   cpu_setVertexPullerHead(
           phong.gpu     , //gpu
           phong.puller  , //puller id
           0                       , //id of head/vertex attrib
-          indiciesBuffer, //buffer id
+          phong.vertices, //buffer id
           sizeof(float)*0         , //offset
           sizeof(float)*3         );//stride
 
@@ -164,24 +172,7 @@ void phong_onInit(int32_t width, int32_t height) {
           phong.gpu   , //gpu
           phong.puller, //puller id
           0                     );//id of head/vertex attrib
-
-  cpu_setVertexPullerHead(
-          phong.gpu     , //gpu
-          phong.puller  , //puller id
-          1                       , //id of head/vertex attrib
-          indiciesBuffer, //buffer id
-          sizeof(float)*0         , //offset
-          sizeof(float)*3         );//stride
-
-  cpu_enableVertexPullerHead(
-          phong.gpu   , //gpu
-          phong.puller, //puller id
-          1                     );//id of head/vertex attrib
-
-  cpu_setIndexing(phong.gpu, phong.puller, indiciesBuffer, 4); //1,2, 4?
-
-//  //activate phong.program
-  cpu_useProgram(phong.gpu,phong.program);
+  //! [HEAD]
 }
 
 /// @}
@@ -215,29 +206,53 @@ void phong_onDraw(SDL_Surface *surface) {
   ///  - cpu_drawTriangles()      XXX
   ///  - getUniformLocation()     XXX
 
-  cpu_useProgram(phong.gpu, phong.program);
+  //! [CLEAR]
+//  float const depth = (float)(+INFINITY);//infinity depth
+//  cpu_clearDepth(phong.gpu,depth);
 
-  //create vertex puller
-  cpu_bindVertexPuller(phong.gpu, phong.puller);
+//  Vec4 const color = {{.1f,.1f,.1f,.1f}};//dark gray color
+//  cpu_clearColor(phong.gpu,&color);
+  //! [CLEAR]
 
-  //upload camera position
-  cpu_uniform3f(phong.gpu, getUniformLocation(phong.gpu, "cameraPosition"), cameraPosition.data[0],
-                cameraPosition.data[1], cameraPosition.data[2]);
+  //! [USE_PROGRAM]
+  cpu_useProgram(
+          phong.gpu    , //gpu
+          phong.program);//program id
+  //! [USE_PROGRAM]
+  //! [BIND_PULLER]
+  cpu_bindVertexPuller(
+          phong.gpu   , //gpu
+          phong.puller);//program id
+  //! [BIND_PULLER]
+  //! [SET_UNIFORMS]
+  UniformLocation const viewMatrixUniform = getUniformLocation(
+          phong.gpu, //gpu
+          "viewMatrix"       );//name of uniform variable
 
-  //upload light position
-  cpu_uniform3f(phong.gpu, getUniformLocation(phong.gpu, "lightPosition"), phong.lightPosition.data[0],
-                phong.lightPosition.data[1], phong.lightPosition.data[2]);
+  cpu_uniformMatrix4fv(
+          phong.gpu, //gpu
+          viewMatrixUniform  , //location of uniform variable
+          (float*)&viewMatrix);//pointer to data
 
-  //upload view matrix
-  cpu_uniformMatrix4fv(phong.gpu, getUniformLocation(phong.gpu, "viewMatrix"), (float *) &viewMatrix);
+  UniformLocation const projectionMatrixUniform = getUniformLocation(
+          phong.gpu, //gpu
+          "projectionMatrix" );//name of uniform variable
 
-  //upload projection matrix
-  cpu_uniformMatrix4fv(phong.gpu, getUniformLocation(phong.gpu, "projectionMatrix"), (float *) &projectionMatrix);
+  cpu_uniformMatrix4fv(
+          phong.gpu      , //gpu
+          projectionMatrixUniform  , //location of uniform variable
+          (float*)&projectionMatrix);//pointer to data of
+  //! [SET_UNIFORMS]
 
-  cpu_drawTriangles(phong.gpu, 1048); //1048 bunny vertices? found in bunny.c
+  //! [DRAW]
+  cpu_drawTriangles(
+          phong.gpu, //gpu
+          3                  );//number of vertices
+  //! [DRAW]
 
-  // copy image from gpu to SDL surface
-  cpu_swapBuffers(surface, phong.gpu);
+  //! [SWAP]
+  cpu_swapBuffers(surface,phong.gpu);
+  //! [SWAP]
 }
 
 /// @}
