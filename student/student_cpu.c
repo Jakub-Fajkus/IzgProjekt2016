@@ -84,11 +84,10 @@ void phong_onInit(int32_t width, int32_t height) {
   ///  - cpu_createVertexPullers()         XXX
   ///  - cpu_setVertexPullerHead()         XXX
   ///  - cpu_enableVertexPullerHead()      XXX
-  ///  - cpu_setIndexing()
+  ///  - cpu_setIndexing()                 XXX
 
 
   phong.program = cpu_createProgram(phong.gpu);
-  cpu_useProgram(phong.gpu, phong.program);
 
   cpu_reserveUniform(
           phong.gpu, //gpu
@@ -132,7 +131,7 @@ void phong_onInit(int32_t width, int32_t height) {
   cpu_bufferData(
           phong.gpu     , //gpu
           verticesBuffer, //buffer id
-          6*sizeof(float)*1048         , //size of data that is going to be copied to buffer
+          sizeof(struct BunnyVertex)*1048         , //size of data that is going to be copied to buffer
           bunnyVertices               );//pointer to data
 
   size_t indiciesBuffer;
@@ -144,7 +143,7 @@ void phong_onInit(int32_t width, int32_t height) {
   cpu_bufferData(
           phong.gpu     , //gpu
           indiciesBuffer, //buffer id
-          3*sizeof(size_t)*sizeof(float)*2092         , //size of data that is going to be copied to buffer
+          3*sizeof(VertexIndex)*2092         , //size of data that is going to be copied to buffer
           bunnyIndices               );//pointer to data
 
   cpu_createVertexPullers(
@@ -156,9 +155,9 @@ void phong_onInit(int32_t width, int32_t height) {
           phong.gpu     , //gpu
           phong.puller  , //puller id
           0                       , //id of head/vertex attrib
-          indiciesBuffer, //buffer id
+          verticesBuffer, //buffer id
           sizeof(float)*0         , //offset
-          sizeof(float)*3         );//stride
+          sizeof(float)*6         );//stride
 
   cpu_enableVertexPullerHead(
           phong.gpu   , //gpu
@@ -169,9 +168,9 @@ void phong_onInit(int32_t width, int32_t height) {
           phong.gpu     , //gpu
           phong.puller  , //puller id
           1                       , //id of head/vertex attrib
-          indiciesBuffer, //buffer id
-          sizeof(float)*0         , //offset
-          sizeof(float)*3         );//stride
+          verticesBuffer, //buffer id
+          sizeof(float)*3         , //offset
+          sizeof(float)*6         );//stride
 
   cpu_enableVertexPullerHead(
           phong.gpu   , //gpu
@@ -180,8 +179,6 @@ void phong_onInit(int32_t width, int32_t height) {
 
   cpu_setIndexing(phong.gpu, phong.puller, indiciesBuffer, 4); //1,2, 4?
 
-//  //activate phong.program
-  cpu_useProgram(phong.gpu,phong.program);
 }
 
 /// @}
@@ -234,7 +231,7 @@ void phong_onDraw(SDL_Surface *surface) {
   //upload projection matrix
   cpu_uniformMatrix4fv(phong.gpu, getUniformLocation(phong.gpu, "projectionMatrix"), (float *) &projectionMatrix);
 
-  cpu_drawTriangles(phong.gpu, 1048); //1048 bunny vertices? found in bunny.c
+  cpu_drawTriangles(phong.gpu, 2092*3);
 
   // copy image from gpu to SDL surface
   cpu_swapBuffers(surface, phong.gpu);

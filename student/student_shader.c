@@ -109,18 +109,18 @@ void phong_fragmentShader(
   sub_Vec3(&lightVector, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")), fs_interpretInputAttributeAsVec3(gpu, input, 0));
   normalize_Vec3(&lightVector, &lightVector);
 
-  Vec3 green; //alfa?
+  Vec3 green;
   init_Vec3(&green, 0, 1, 0);
 
-  Vec3 white; //alfa?
+  Vec3 white;
   init_Vec3(&white, 1, 1, 1);
 
   Vec3 normal;
   normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
 
   Vec3 tmp;
-  multiply_Vec3_Float(&tmp, &normal, 2 * dot_Vec3(&normal, &lightVector));
-  normalize_Vec3(&tmp, &tmp);
+  multiply_Vec3_Float(&tmp, &normal, 2 * MAX(dot_Vec3(&normal, &lightVector),0));
+//  normalize_Vec3(&tmp, &tmp); do not do this, idiot!
   Vec3 reflection;
   sub_Vec3(&reflection, &tmp, &lightVector);
   normalize_Vec3(&reflection, &reflection);
