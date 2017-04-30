@@ -68,7 +68,6 @@ void phong_vertexShader(
   init_Vec3(position, pos3.data[0], pos3.data[1], pos3.data[2]);
 
   Vec3 vecNormal = *vs_interpretInputVertexAttributeAsVec3(gpu, input, 1);//index of vertex attribute
-
   Vec3 *const normal = vs_interpretOutputVertexAttributeAsVec3(gpu, output, 1);//index of vertex attribute
   init_Vec3(normal, vecNormal.data[0], vecNormal.data[1], vecNormal.data[2]);
 
@@ -105,22 +104,23 @@ void phong_fragmentShader(
 
   Vec3 cameraPosition;
   Vec3 lightVector;
-  normalize_Vec3(&cameraPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "cameraPosition")));
-  sub_Vec3(&lightVector, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")), fs_interpretInputAttributeAsVec3(gpu, input, 0));
+  sub_Vec3(&lightVector,    shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "lightPosition")),  fs_interpretInputAttributeAsVec3(gpu, input, 0));
+  sub_Vec3(&cameraPosition, shader_interpretUniformAsVec3(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "cameraPosition")), fs_interpretInputAttributeAsVec3(gpu, input, 0));
   normalize_Vec3(&lightVector, &lightVector);
+  normalize_Vec3(&cameraPosition, &cameraPosition);
 
   Vec3 green;
   init_Vec3(&green, 0, 1, 0);
 
   Vec3 white;
-  init_Vec3(&white, 1, 1, 1);
+  init_Vec3(&white, 0, 0, 1);
 
   Vec3 normal;
   normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
 
   Vec3 tmp;
   multiply_Vec3_Float(&tmp, &normal, 2 * MAX(dot_Vec3(&normal, &lightVector),0));
-//  normalize_Vec3(&tmp, &tmp); do not do this, idiot!
+//  normalize_Vec3(&tmp, &tmp);// do not do this, idiot!
   Vec3 reflection;
   sub_Vec3(&reflection, &tmp, &lightVector);
   normalize_Vec3(&reflection, &reflection);

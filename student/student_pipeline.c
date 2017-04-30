@@ -119,24 +119,18 @@ void gpu_runPrimitiveAssembly(
   ///  - GPUVertexShaderInput()
 
   primitive->nofUsedVertices = nofPrimitiveVertices;
+  GPUVertexShaderInput shaderInput;
+
+  GPUVertexPullerOutput attributes[MAX_ATTRIBUTES];
+  shaderInput.attributes = &attributes;
 
   VertexShaderInvocation actualInvocation = baseVertexShaderInvocation;
   for (int i = 0; i < nofPrimitiveVertices; ++i, ++actualInvocation) {
-    GPUVertexShaderInput shaderInput;
-    shaderInput.attributes = malloc(sizeof(GPUVertexPullerOutput const*) * MAX_ATTRIBUTES); //todo: make static
-
     shaderInput.gl_VertexID = gpu_computeGLVertexID(puller->indices, actualInvocation);
     gpu_runVertexPuller(shaderInput.attributes, puller, actualInvocation);
 
     vertexShader(&primitive->vertices[i], &shaderInput, gpu);
   }
-
-  //todo?
-//  primitive->types[0] = ATTRIB_FLOAT;
-//  primitive->types[1] = ATTRIB_FLOAT;
-//  primitive->types[2] = ATTRIB_FLOAT;
-//  primitive->types[3] = ATTRIB_;
-//  primitive->types[4] = ;
 
   (void)gpu;
   (void)primitive;

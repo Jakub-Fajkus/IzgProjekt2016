@@ -134,7 +134,7 @@ void phong_onInit(int32_t width, int32_t height) {
           sizeof(struct BunnyVertex)*1048         , //size of data that is going to be copied to buffer
           bunnyVertices               );//pointer to data
 
-  size_t indiciesBuffer;
+  size_t indiciesBuffer; //todo:make array!
   cpu_createBuffers(
           phong.gpu      , //gpu
           1              , //number of buffer ids that will be reserved
