@@ -52,7 +52,7 @@ void phong_vertexShader(
 
 
   Mat4 projectionMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "projectionMatrix"));
-  Mat4 viewMatrix = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "viewMatrix"));
+  Mat4 viewMatrix       = *shader_interpretUniformAsMat4(gpu_getUniformsHandle(gpu), getUniformLocation(gpu, "viewMatrix"));
 
   Mat4 mult;
   multiply_Mat4_Mat4(&mult, &projectionMatrix, &viewMatrix);
@@ -113,20 +113,26 @@ void phong_fragmentShader(
   init_Vec3(&green, 0, 1, 0);
 
   Vec3 white;
-  init_Vec3(&white, 0, 0, 1);
+  init_Vec3(&white, 1, 1, 1);
 
   Vec3 normal;
   normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
 
   Vec3 tmp;
-  multiply_Vec3_Float(&tmp, &normal, 2 * MAX(dot_Vec3(&normal, &lightVector),0));
+  float dotNormalLight = MAX(0, dot_Vec3(&normal, &lightVector));
+  if (dotNormalLight == 0) {
+    init_Vec4(&output->color, 0, 0, 0, 1);
+    return;
+  }
+
+  multiply_Vec3_Float(&tmp, &normal, 2 * dotNormalLight);
 //  normalize_Vec3(&tmp, &tmp);// do not do this, idiot!
   Vec3 reflection;
   sub_Vec3(&reflection, &tmp, &lightVector);
   normalize_Vec3(&reflection, &reflection);
 
   Vec3 colorDiffuse;
-  multiply_Vec3_Float(&colorDiffuse, &green, MAX(dot_Vec3(&normal, &lightVector),0));
+  multiply_Vec3_Float(&colorDiffuse, &green, dotNormalLight);
 
   Vec3 colorSpecular;
   multiply_Vec3_Float(&colorSpecular, &white, powf(MAX(dot_Vec3(&cameraPosition, &reflection), 0), 40.f));
