@@ -118,13 +118,13 @@ void phong_fragmentShader(
   Vec3 normal;
   normalize_Vec3(&normal, fs_interpretInputAttributeAsVec3(gpu, input, 1));
 
-  Vec3 tmp;
   float dotNormalLight = MAX(0, dot_Vec3(&normal, &lightVector));
   if (dotNormalLight == 0) {
     init_Vec4(&output->color, 0, 0, 0, 1);
     return;
   }
 
+  Vec3 tmp;
   multiply_Vec3_Float(&tmp, &normal, 2 * dotNormalLight);
 //  normalize_Vec3(&tmp, &tmp);// do not do this, idiot!
   Vec3 reflection;

@@ -103,6 +103,7 @@ void phong_onInit(int32_t width, int32_t height) {
           phong.gpu, //gpu
           "cameraPosition"       , //uniform name
           UNIFORM_VEC3       );//uniform type
+
   cpu_reserveUniform(
           phong.gpu, //gpu
           "lightPosition"       , //uniform name
